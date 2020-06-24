@@ -1,5 +1,5 @@
 -- {-# Language DatatypeContexts #-}
--- import Fst
+import Fst
 -- import Control.Lens
 
 {-
@@ -30,4 +30,7 @@ data Workspace = Workspace [Feature] [Array] [Morpheme]
 {-
 Constraints are DFSTs that target one of the three lists in the Workspace.
 -}
+data State = Start | Wait | Stop
 
+gen1 :: Workspace -> [Workspace]
+gen1 (Workspace fs as ms) = undefined 
