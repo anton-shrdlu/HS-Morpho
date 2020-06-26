@@ -22,12 +22,16 @@ The Exponent is the most specic item that satisfies compatability
 -}
 
 
-data Feature = Binary {label ::String, value :: Bool} deriving (Eq, Show)
+data Feature = 
+    Binary { featureName :: String
+           , featureValue :: Bool} deriving (Eq, Show)
 -- add valued Features
 data Category = N | V | A deriving Eq-- Categories could just be Strings?
 
 type Morpheme  = Either Stem Exponent
-data Exponent  = Exponent String [Feature] deriving Eq
+data Exponent  = 
+    Exponent { exName :: String
+             , exFeatures :: [Feature]} deriving Eq
 data Array     = Array {exponents :: [Exponent]} deriving Eq
 data Stem      = Stem String Category deriving Eq -- unsure if Category is needed.
 data Workspace = Workspace [Feature] [Array] [Morpheme] deriving Eq
@@ -92,6 +96,15 @@ idF (Workspace features1 _ _) (Workspace features2 _ _) =
         feature1 <- features1
         feature2 <- features2
         let (f1,f2) = (feature1,feature2)
-        guard (label f1 == label f2)
-        guard (value f1 /= value f2)
+        guard (featureName f1 == featureName f2)
+        guard (featureValue f1 /= featureValue f2)
 
+mkMax :: Feature -> Markedness
+mkMax feature (Workspace features _ morphemes) =
+    rights morphemes
+    & max feature features
+  where
+    max f fs ms | f `elem` fs 
+                  && not (featureName f `elem` 
+                  (map exFeatures ms >>= map featureName)) = [()]
+                | otherwise = []
