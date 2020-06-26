@@ -1,5 +1,6 @@
 import Fst
-import Data.List (inits,tails,delete)
+import Data.List (inits,tails,delete,nub)
+import Control.Monad (guard)
 -- import Control.Lens
 
 {-
@@ -30,10 +31,6 @@ data Workspace = Workspace [Feature] [Array] [Morpheme]
 {-
 Constraints are DFSTs that target one of the three lists in the Workspace.
 -}
-data State = Start | Wait | Stop
-
-gen1 :: Workspace -> [Workspace]
-gen1 (Workspace fs as ms) = undefined 
 
 split :: [a] -> [([a], [a])]
 split xs = zip (inits xs) (tails xs)
@@ -47,3 +44,14 @@ merge (arrays,workspace) =
         let (array,symbol') = symbol <$ taggedArray
         (work,space) <- split workspace
         return (array, work ++ (symbol' : space)) 
+
+move :: Eq a => [a] -> [[a]]
+move workspace =
+    do
+        (work,space) <- split workspace 
+        guard (not $ null space)
+        let (workspace',movee) = (work++(tail space),head space) 
+        ((work',space'),movee') <- map (\x -> (x,movee)) $ split workspace'
+        let final = (work'++(movee' : space'))
+        guard (final /= workspace)
+        return final
