@@ -22,7 +22,7 @@ The Exponent is the most specic item that satisfies compatability
 -}
 
 
-data Feature = Binary String Bool deriving (Eq, Show)
+data Feature = Binary {label ::String, value :: Bool} deriving (Eq, Show)
 -- add valued Features
 data Category = N | V | A deriving Eq-- Categories could just be Strings?
 
@@ -31,12 +31,18 @@ data Exponent  = Exponent String [Feature] deriving Eq
 data Array     = Array {exponents :: [Exponent]} deriving Eq
 data Stem      = Stem String Category deriving Eq -- unsure if Category is needed.
 data Workspace = Workspace [Feature] [Array] [Morpheme] deriving Eq
+
 {-
 Constraints could be DFSTs that target one of the three lists in the Workspace.
 -}
+
+-- General helper-functions
+
 mkWorkspace :: Either Stem Exponent -> [Feature] -> [Array] -> Workspace
 mkWorkspace stem@(Left (Stem string category)) features arrays = 
     Workspace features arrays [stem]
+
+-- GEN:
 
 split :: [a] -> [([a], [a])]
 split xs = zip (inits xs) (tails xs)
@@ -48,14 +54,14 @@ wrapMerge (Workspace features arrays morphemes) =
     & map (uncurry (Workspace features))
 
 merge :: Eq a => ([[a]], [a]) -> [([[a]], [a])]
-merge (arrays,workspace) = 
+merge input@(arrays,workspace) = 
     do
         pick <- arrays
         let taggedArray = (delete pick arrays,pick)
         symbol <- pick
         let (array,symbol') = symbol <$ taggedArray
         (work,space) <- split workspace
-        return (array, work ++ (symbol' : space)) 
+        input : return (array, work ++ (symbol' : space)) 
 
 wrapMove :: Workspace -> [Workspace]
 wrapMove (Workspace features arrays morphemes) =
@@ -70,4 +76,22 @@ move workspace =
         ((work,space),movee) <- map (\x -> (x,movee)) $ split workspace'
         let workspace' = work ++ (movee : space)
         guard (workspace' /= workspace)
-        return workspace'
+        workspace : return workspace'
+
+-- Constraints:
+type Constraint = Either Faithfulness Markedness
+type Markedness = Workspace -> [()]
+type Faithfulness = Workspace -> Workspace -> [()]
+
+mc :: Markedness -- maybe this should be (anti-)Faithfulness instead?
+mc (Workspace features arrays morphemes) = () <$ arrays
+
+idF :: Faithfulness
+idF (Workspace features1 _ _) (Workspace features2 _ _) =
+    do 
+        feature1 <- features1
+        feature2 <- features2
+        let (f1,f2) = (feature1,feature2)
+        guard (label f1 == label f2)
+        guard (value f1 /= value f2)
+
