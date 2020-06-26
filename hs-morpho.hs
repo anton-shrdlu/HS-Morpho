@@ -1,3 +1,23 @@
+module HS_morpho
+    ( Feature(Binary) 
+    , Category
+    , Morpheme
+    , Exponent(Exponent)
+    , Array(Array)
+    , Workspace(Workspace)
+    , mkWorkspace
+    , GEN
+    , mkGen
+    , Ranking
+    , Constraint
+    , Markedness
+    , Faithfulness
+    , mc
+    , idF
+    , mkMax
+    ) where
+
+
 -- import Fst
 import Data.List (inits,tails,delete,nub)
 import Control.Monad (guard)
@@ -24,24 +44,31 @@ The Exponent is the most specic item that satisfies compatability
 
 data Feature = 
     Binary { featureName :: String
-           , featureValue :: Bool} deriving (Eq, Show)
+           , featureValue :: Bool} 
+    deriving (Eq, Show)
 -- add valued Features
 data Category = N | V | A deriving Eq-- Categories could just be Strings?
+type Morpheme = Either Stem Exponent
 
-type Morpheme  = Either Stem Exponent
-data Exponent  = 
+data Exponent = 
     Exponent { exName :: String
-             , exFeatures :: [Feature]} deriving Eq
-data Array     = Array {exponents :: [Exponent]} deriving Eq
-data Stem      = Stem String Category deriving Eq -- unsure if Category is needed.
-data Workspace = Workspace [Feature] [Array] [Morpheme] deriving Eq
+             , exFeatures :: [Feature]} 
+    deriving Eq
+
+data Array = Array {exponents :: [Exponent]} 
+    deriving Eq
+
+data Stem = Stem String Category 
+    deriving Eq -- unsure if Category is needed.
+
+data Workspace = Workspace [Feature] [Array] [Morpheme] 
+    deriving Eq
 
 {-
 Constraints could be DFSTs that target one of the three lists in the Workspace.
 -}
 
 -- General helper-functions
-
 mkWorkspace :: Either Stem Exponent -> [Feature] -> [Array] -> Workspace
 mkWorkspace stem@(Left (Stem string category)) features arrays = 
     Workspace features arrays [stem]
@@ -52,9 +79,9 @@ type GEN = Workspace -> [Workspace]
 mkGen :: Bool -> Bool -> GEN
 mkGen allowMerge allowMove workspace
     | allowMerge = wrapMerge workspace 
-    ++ mkGen False allowMove workspace
+      ++ mkGen False allowMove workspace
     | allowMove = wrapMove workspace
-    ++ mkGen False False workspace
+      ++ mkGen False False workspace
     | otherwise = pure workspace
 
 split :: [a] -> [([a], [a])]
@@ -92,6 +119,7 @@ move workspace =
         return workspace'
 
 -- Constraints:
+type Ranking = [Constraint]
 type Constraint = Either Faithfulness Markedness
 type Markedness = Workspace -> [()]
 type Faithfulness = Workspace -> Workspace -> [()]
@@ -108,12 +136,13 @@ idF (Workspace features1 _ _) (Workspace features2 _ _) =
         guard (featureName f1 == featureName f2)
         guard (featureValue f1 /= featureValue f2)
 
-mkMax :: Feature -> Markedness
+mkMax :: Feature -> Markedness -- maybe String -> Markedness is better
 mkMax feature (Workspace features _ morphemes) =
     rights morphemes
     & max feature features
   where
-    max f fs ms | f `elem` fs 
-                  && not (featureName f `elem` 
-                  (map exFeatures ms >>= map featureName)) = [()]
-                | otherwise = []
+    max f fs ms 
+        | f `elem` fs 
+          && notElem (featureName f) 
+          (map exFeatures ms >>= map featureName) = [()]
+        | otherwise = []
