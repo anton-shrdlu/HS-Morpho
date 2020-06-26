@@ -47,6 +47,15 @@ mkWorkspace stem@(Left (Stem string category)) features arrays =
     Workspace features arrays [stem]
 
 -- GEN:
+type GEN = Workspace -> [Workspace]
+
+mkGen :: Bool -> Bool -> GEN
+mkGen allowMerge allowMove workspace
+    | allowMerge = wrapMerge workspace 
+    ++ mkGen False allowMove workspace
+    | allowMove = wrapMove workspace
+    ++ mkGen False False workspace
+    | otherwise = pure workspace
 
 split :: [a] -> [([a], [a])]
 split xs = zip (inits xs) (tails xs)
@@ -58,14 +67,14 @@ wrapMerge (Workspace features arrays morphemes) =
     & map (uncurry (Workspace features))
 
 merge :: Eq a => ([[a]], [a]) -> [([[a]], [a])]
-merge input@(arrays,workspace) = 
+merge (arrays,workspace) = 
     do
         pick <- arrays
         let taggedArray = (delete pick arrays,pick)
         symbol <- pick
         let (array,symbol') = symbol <$ taggedArray
         (work,space) <- split workspace
-        input : return (array, work ++ (symbol' : space)) 
+        return (array, work ++ (symbol' : space)) 
 
 wrapMove :: Workspace -> [Workspace]
 wrapMove (Workspace features arrays morphemes) =
@@ -80,7 +89,7 @@ move workspace =
         ((work,space),movee) <- map (\x -> (x,movee)) $ split workspace'
         let workspace' = work ++ (movee : space)
         guard (workspace' /= workspace)
-        workspace : return workspace'
+        return workspace'
 
 -- Constraints:
 type Constraint = Either Faithfulness Markedness
