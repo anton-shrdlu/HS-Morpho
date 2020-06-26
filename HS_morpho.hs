@@ -3,7 +3,7 @@ module HS_morpho
     , Category
     , Morpheme
     , Exponent(Exponent)
-    , Array(Array)
+    , Array
     , Workspace(Workspace)
     , mkWorkspace
     , GEN
@@ -51,12 +51,11 @@ data Category = N | V | A deriving Eq-- Categories could just be Strings?
 type Morpheme = Either Stem Exponent
 
 data Exponent = 
-    Exponent { exName :: String
+    Exponent { exName :: String -- exname is a bad name
              , exFeatures :: [Feature]} 
     deriving Eq
 
-data Array = Array {exponents :: [Exponent]} 
-    deriving Eq
+type Array = [Exponent] 
 
 data Stem = Stem String Category 
     deriving Eq -- unsure if Category is needed.
@@ -89,8 +88,8 @@ split xs = zip (inits xs) (tails xs)
 
 wrapMerge :: Workspace -> [Workspace]
 wrapMerge (Workspace features arrays morphemes) =
-    merge (map (map Right . exponents) arrays,morphemes)
-    & map (first (map (Array . rights)))
+    merge (map (map Right) arrays,morphemes)
+    & map (first (map rights))
     & map (uncurry (Workspace features))
 
 merge :: Eq a => ([[a]], [a]) -> [([[a]], [a])]
@@ -124,11 +123,16 @@ type Constraint = Either Faithfulness Markedness
 type Markedness = Workspace -> [()]
 type Faithfulness = Workspace -> Workspace -> [()]
 
-mc :: Markedness -- maybe this should be (anti-)Faithfulness instead?
-mc (Workspace features arrays morphemes) = () <$ arrays
+mc :: Constraint
+mc = Right mc'
+mc' :: Markedness -- maybe this should be (anti-)Faithfulness instead?
+mc' (Workspace features arrays morphemes) = () <$ arrays
 
-idF :: Faithfulness
-idF (Workspace features1 _ _) (Workspace features2 _ _) =
+idF :: Constraint
+idF = Left idF'
+-- why does this output units? something to do with the guard being last.
+idF' :: Faithfulness
+idF' (Workspace features1 _ _) (Workspace features2 _ _) =
     do 
         feature1 <- features1
         feature2 <- features2
@@ -136,13 +140,15 @@ idF (Workspace features1 _ _) (Workspace features2 _ _) =
         guard (featureName f1 == featureName f2)
         guard (featureValue f1 /= featureValue f2)
 
-mkMax :: Feature -> Markedness -- maybe String -> Markedness is better
-mkMax feature (Workspace features _ morphemes) =
+mkMax :: String -> Constraint
+mkMax = Right . mkMax'
+mkMax' :: String -> Markedness -- maybe String -> Markedness is better
+mkMax' feature (Workspace features _ morphemes) =
     rights morphemes
     & max feature features
   where
     max f fs ms 
-        | f `elem` fs 
-          && notElem (featureName f) 
+        | f `elem` map featureName fs 
+          && f `notElem`
           (map exFeatures ms >>= map featureName) = [()]
         | otherwise = []
