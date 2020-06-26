@@ -21,16 +21,19 @@ The Exponent is the most specic item that satisfies compatability
 
 data Feature = Binary String Bool deriving (Eq, Show)
 -- add valued Features
-data Category = N | V | A -- Maybe Category could just be String.
+data Category = N | V | A -- Categories could just be Strings?
 
-data Exponent  = Exponent String [Feature]
-data Stem      = Stem Category String [Feature] -- unsure if Category is needed.
 type Morpheme  = Either Stem Exponent
-data Array     = Array [Exponent] -- String <- we don't need a label?
+data Exponent  = Exponent String [Feature]
+data Array     = Array [Exponent]
+data Stem      = Stem Category String -- unsure if Category is needed.
 data Workspace = Workspace [Feature] [Array] [Morpheme]
 {-
-Constraints are DFSTs that target one of the three lists in the Workspace.
+Constraints could be DFSTs that target one of the three lists in the Workspace.
 -}
+mkWorkspace :: Either Stem Exponent -> [Feature] -> [Array] -> Workspace
+mkWorkspace stem@(Left (Stem category string)) features arrays = 
+    Workspace features arrays [stem]
 
 split :: [a] -> [([a], [a])]
 split xs = zip (inits xs) (tails xs)
@@ -50,8 +53,8 @@ move workspace =
     do
         (work,space) <- split workspace 
         guard (not $ null space)
-        let (workspace',movee) = (work++(tail space),head space) 
-        ((work',space'),movee') <- map (\x -> (x,movee)) $ split workspace'
-        let final = (work'++(movee' : space'))
-        guard (final /= workspace)
-        return final
+        let (workspace',movee) = (work ++ tail space,head space) 
+        ((work,space),movee) <- map (\x -> (x,movee)) $ split workspace'
+        let workspace' = work ++ (movee : space)
+        guard (workspace' /= workspace)
+        return workspace'
