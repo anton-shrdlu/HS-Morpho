@@ -65,12 +65,17 @@ data Workspace = Workspace [Feature] [Array] [Morpheme]
 
 {-
 Constraints could be DFSTs that target one of the three lists in the Workspace.
+Except many seem to compare between features on Morphemes and features on the stem (this could mean faithfulness)
+mc only checks the number of arrays (this could be markedness, unless we change it to check between IO)
 -}
 
 -- General helper-functions
 mkWorkspace :: Either Stem Exponent -> [Feature] -> [Array] -> Workspace
 mkWorkspace stem@(Left (Stem string category)) features arrays = 
     Workspace features arrays [stem]
+
+split :: [a] -> [([a], [a])]
+split xs = zip (inits xs) (tails xs)
 
 -- GEN:
 type GEN = Workspace -> [Workspace]
@@ -82,9 +87,6 @@ mkGen allowMerge allowMove workspace
     | allowMove = wrapMove workspace
       ++ mkGen False False workspace
     | otherwise = pure workspace
-
-split :: [a] -> [([a], [a])]
-split xs = zip (inits xs) (tails xs)
 
 wrapMerge :: Workspace -> [Workspace]
 wrapMerge (Workspace features arrays morphemes) =
@@ -127,7 +129,6 @@ mc :: Markedness -- maybe this should be (anti-)Faithfulness instead?
 mc (Workspace features arrays morphemes) = () <$ arrays
 
 -- why does this output units? something to do with the guard being last.
--- idF' :: Faithfulness -- this should check between features and morphemes.
 idF :: Markedness
 idF (Workspace features1 _ morphemes) =
     do 
@@ -137,7 +138,7 @@ idF (Workspace features1 _ morphemes) =
         guard (featureName f1 == featureName f2)
         guard (featureValue f1 /= featureValue f2)
 
-mkMax :: String -> Markedness -- maybe String -> Markedness is better
+mkMax :: String -> Markedness
 mkMax feature (Workspace features _ morphemes) =
     rights morphemes
     & max feature features
