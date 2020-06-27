@@ -58,10 +58,12 @@ data Exponent =
 type Array = [Exponent] 
 
 data Stem = Stem String Category 
-    deriving Eq -- unsure if Category is needed. <- it is needed because it determines the set of features.
+    deriving Eq -- unsure if Category is needed. <- it is needed because it shoudl determine the set of features.
 
 data Workspace = Workspace [Feature] [Array] [Morpheme] 
     deriving Eq
+
+type Grammar = (GEN,Ranking)
 
 {-
 Constraints could be DFSTs that target one of the three lists in the Workspace.
@@ -126,9 +128,8 @@ type Markedness = Workspace -> [()]
 type Faithfulness = Workspace -> Workspace -> [()]
 
 mc :: Markedness -- maybe this should be (anti-)Faithfulness instead?
-mc (Workspace features arrays morphemes) = () <$ arrays
+mc (Workspace _ arrays _) = () <$ arrays
 
--- why does this output units? something to do with the guard being last.
 idF :: Markedness
 idF (Workspace features1 _ morphemes) =
     do 
@@ -150,4 +151,18 @@ mkMax feature (Workspace features _ morphemes) =
         | otherwise = []
 
 -- EVAL
--- maybe just use Fst.hs?
+eval :: Grammar -> Workspace -> Workspace
+eval (gen,ranking) workspace = 
+    bests ranking $ gen workspace 
+  where 
+    bests [] candidates = head candidates
+    bests _ [candidate] = candidate
+    bests (c:cs) candidates =
+        bests cs $ filter (\x -> c x== bestValue) candidates
+          where bestValue = minimum $ map c candidates
+    optimals c [] acc = acc -- possible alternative to bestValue
+    optimals c (x:xs) [] = optimals c xs [x]
+    optimals c (x:xs) (a:cc) | c x < c a = optimals c xs [x] 
+                             | c x == c a = optimals c xs (x:a:cc)
+                             | c x > c a = optimals c xs (a:cc)
+ 
