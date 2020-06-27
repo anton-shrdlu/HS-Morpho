@@ -28,7 +28,7 @@ import Data.Bifunctor (Bifunctor(first))
 
 {-
 Each stem (V,N,A,D...) has an associated set of features.
-Tems are taken from the Lexicon with their (fully specified) set of features.
+Items are taken from the Lexicon with their (fully specified) set of features.
 No features are added.
 
 Syntax gets the inflected word without structure but with all its features.
@@ -58,7 +58,7 @@ data Exponent =
 type Array = [Exponent] 
 
 data Stem = Stem String Category 
-    deriving Eq -- unsure if Category is needed.
+    deriving Eq -- unsure if Category is needed. <- it is needed because it determines the set of features.
 
 data Workspace = Workspace [Feature] [Array] [Morpheme] 
     deriving Eq
@@ -119,31 +119,26 @@ move workspace =
 
 -- Constraints:
 type Ranking = [Constraint]
-type Constraint = Either Faithfulness Markedness
+type Constraint = Markedness -- so far all the features seem to be broadly markedness. If this doesn't change, delete features
 type Markedness = Workspace -> [()]
 type Faithfulness = Workspace -> Workspace -> [()]
 
-mc :: Constraint
-mc = Right mc'
-mc' :: Markedness -- maybe this should be (anti-)Faithfulness instead?
-mc' (Workspace features arrays morphemes) = () <$ arrays
+mc :: Markedness -- maybe this should be (anti-)Faithfulness instead?
+mc (Workspace features arrays morphemes) = () <$ arrays
 
-idF :: Constraint
-idF = Left idF'
 -- why does this output units? something to do with the guard being last.
-idF' :: Faithfulness
-idF' (Workspace features1 _ _) (Workspace features2 _ _) =
+-- idF' :: Faithfulness -- this should check between features and morphemes.
+idF :: Markedness
+idF (Workspace features1 _ morphemes) =
     do 
         feature1 <- features1
-        feature2 <- features2
+        feature2 <- rights morphemes >>= exFeatures
         let (f1,f2) = (feature1,feature2)
         guard (featureName f1 == featureName f2)
         guard (featureValue f1 /= featureValue f2)
 
-mkMax :: String -> Constraint
-mkMax = Right . mkMax'
-mkMax' :: String -> Markedness -- maybe String -> Markedness is better
-mkMax' feature (Workspace features _ morphemes) =
+mkMax :: String -> Markedness -- maybe String -> Markedness is better
+mkMax feature (Workspace features _ morphemes) =
     rights morphemes
     & max feature features
   where
@@ -152,3 +147,6 @@ mkMax' feature (Workspace features _ morphemes) =
           && f `notElem`
           (map exFeatures ms >>= map featureName) = [()]
         | otherwise = []
+
+-- EVAL
+-- maybe just use Fst.hs?
