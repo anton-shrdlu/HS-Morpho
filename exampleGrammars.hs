@@ -1,7 +1,13 @@
 import HS_morpho
 
-gen :: GEN
-gen = mkGen True False
+dies :: (GEN, Ranking)
+dies = (diesGen,diesRanking) 
+
+testDies :: [Feature] -> String
+testDies features = getMorphemes $ converge dies (Workspace features k [Left $ Stem "dies" D])
+
+diesGen :: GEN
+diesGen = mkGen True False
 
 obl :: Bool -> Feature
 obl = Binary "obl"
