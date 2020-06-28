@@ -1,8 +1,9 @@
 module HS_morpho
-    ( Feature(Binary) 
-    , Category
+    ( Feature(Binary)
     , Morpheme
+    , Stem(Stem)
     , Exponent(Exponent)
+    , Category(N,A,V,D)
     , Array
     , Workspace(Workspace)
     , mkWorkspace
@@ -15,6 +16,8 @@ module HS_morpho
     , mc
     , idF
     , mkMax
+    , getMorphemes
+    , converge
     ) where
 
 
@@ -47,7 +50,7 @@ data Feature =
            , featureValue :: Bool} 
     deriving (Eq, Show)
 -- add valued Features
-data Category = N | V | A deriving Eq-- Categories could just be Strings?
+data Category = N | V | A | D deriving Eq-- Categories could just be Strings?
 type Morpheme = Either Stem Exponent
 
 data Exponent = 
@@ -57,7 +60,9 @@ data Exponent =
 
 type Array = [Exponent] 
 
-data Stem = Stem String Category 
+data Stem = 
+    Stem { stName :: String 
+         , stCategory :: Category} 
     deriving Eq -- unsure if Category is needed. <- it is needed because it shoudl determine the set of features.
 
 data Workspace = Workspace [Feature] [Array] [Morpheme] 
@@ -78,6 +83,10 @@ mkWorkspace stem@(Left (Stem string category)) features arrays =
 
 split :: [a] -> [([a], [a])]
 split xs = zip (inits xs) (tails xs)
+
+getMorphemes :: Workspace -> String
+getMorphemes (Workspace _ _ xs) =
+    xs >>= either stName exName
 
 -- GEN:
 type GEN = Workspace -> [Workspace]
@@ -158,11 +167,26 @@ eval (gen,ranking) workspace =
     bests [] candidates = head candidates
     bests _ [candidate] = candidate
     bests (c:cs) candidates =
-        bests cs $ filter (\x -> c x== bestValue) candidates
-          where bestValue = minimum $ map c candidates
-    optimals c [] acc = acc -- possible alternative to bestValue
+        bests cs $ optimals c candidates []
+    optimals c [] acc = acc
     optimals c (x:xs) [] = optimals c xs [x]
     optimals c (x:xs) (a:cc) | c x < c a = optimals c xs [x] 
                              | c x == c a = optimals c xs (x:a:cc)
                              | c x > c a = optimals c xs (a:cc)
+
+cycles :: Grammar -> Workspace -> [Workspace]
+cycles grammar = iterate (eval grammar)
+
+converge :: Grammar -> Workspace -> Workspace
+converge grammar input = dupl $ cycles grammar input
+  where
+    dupl (x:y:ys) 
+        | x == y    = x
+        | otherwise = dupl (y:ys)  
  
+converge' :: Grammar -> Workspace -> [Workspace]
+converge' grammar input = dupl $ cycles grammar input
+  where 
+    dupl (x:y:ys) 
+        | x == y    = [x]
+        | otherwise = x : dupl (y:ys)
