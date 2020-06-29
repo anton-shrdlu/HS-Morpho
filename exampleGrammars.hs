@@ -1,14 +1,7 @@
 import HS_morpho
 
-dies :: (GEN, Ranking)
-dies = (diesGen,diesRanking) 
-
-testDies :: [Feature] -> String
-testDies features = getMorphemes $ converge dies (Workspace features k [Left $ Stem "dies" D])
-
-diesGen :: GEN
-diesGen = mkGen True False
-
+-- features
+-- dies 
 obl :: Bool -> Feature
 obl = Binary "obl"
 gov :: Bool -> Feature
@@ -18,6 +11,8 @@ masc = Binary "masc"
 fem :: Bool -> Feature
 fem = Binary "fem"
 
+--esponents
+--dies
 k :: [Array]
 k = pure
     [ Exponent "m" [masc True, obl True, gov True]
@@ -31,16 +26,8 @@ k = pure
     , Exponent "e" []
     ]
 
-diesRanking :: Ranking
-diesRanking = 
-    [ mc
-    , idF
-    , maxM
-    , maxO
-    , maxF
-    , maxG
-    ]
-
+-- constraints
+--dies
 maxM :: Constraint
 maxM = mkMax "masc"
 maxO :: Constraint
@@ -49,3 +36,24 @@ maxF :: Constraint
 maxF = mkMax "fem"
 maxG :: Constraint
 maxG = mkMax "gov"
+
+--grammars
+--dies
+
+testDies :: [Feature] -> String
+testDies features = getMorphemes $ converge dies (Workspace features k [Left $ Stem "dies" D])
+
+dies :: (GEN, Ranking)
+dies = (diesGen,diesRanking) 
+  where
+    diesGen :: GEN
+    diesGen = mkGen True False
+    diesRanking :: Ranking
+    diesRanking = 
+        [ mc
+        , idF
+        , maxM
+        , maxO
+        , maxF
+        , maxG
+        ]
