@@ -162,17 +162,17 @@ mkMax feature (Workspace features _ morphemes) =
 -- EVAL
 eval :: Grammar -> Workspace -> Workspace
 eval (gen,ranking) workspace = 
-    bests ranking $ gen workspace 
+    best ranking $ gen workspace 
   where 
-    bests [] candidates = head candidates
-    bests _ [candidate] = candidate
-    bests (c:cs) candidates =
-        bests cs $ optimals c candidates []
-    optimals c [] acc = acc
+    best []     candidates = head candidates
+    best _     [candidate] = candidate
+    best (c:cs) candidates = best cs $ optimals c candidates []
+    optimals c []    acc = acc
     optimals c (x:xs) [] = optimals c xs [x]
-    optimals c (x:xs) (a:cc) | c x < c a = optimals c xs [x] 
-                             | c x == c a = optimals c xs (x:a:cc)
-                             | c x > c a = optimals c xs (a:cc)
+    optimals c (x:xs) (a:cc) 
+        | c x <  c a = optimals c xs [x] 
+        | c x == c a = optimals c xs (x:a:cc)
+        | c x >  c a = optimals c xs (a:cc)
 
 cycles :: Grammar -> Workspace -> [Workspace]
 cycles grammar = iterate (eval grammar)
