@@ -11,8 +11,8 @@ masc = Binary "masc"
 fem :: Bool -> Feature
 fem = Binary "fem"
 
---esponents
---dies
+-- exponents
+-- dies
 k :: [Array]
 k = pure
     [ Exponent "m" [masc True, obl True, gov True]
@@ -27,7 +27,7 @@ k = pure
     ]
 
 -- constraints
---dies
+-- dies
 maxM :: Constraint
 maxM = mkMax "masc"
 maxO :: Constraint
@@ -37,9 +37,8 @@ maxF = mkMax "fem"
 maxG :: Constraint
 maxG = mkMax "gov"
 
---grammars
---dies
-
+-- grammars
+-- dies
 testDies :: [Feature] -> String
 testDies features = getMorphemes $ converge dies (Workspace features k [Left $ Stem "dies" D])
 
