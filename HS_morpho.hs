@@ -71,7 +71,6 @@ type Stem = Labeled Category
 stem :: String -> Category -> Stem
 stem = Labeled
 
--- most of the instances of Show are just for testing
 type Morpheme = Either Stem Exponent
 data Category = N | V | A | D deriving (Eq,Show)
 
@@ -169,6 +168,16 @@ mkMax feature (Workspace features _ morphemes) =
           && f `notElem`
           (map content ms >>= map label) = [()]
         | otherwise = []
+
+mkL :: String -> Markedness
+mkL name (Workspace features arrays morphemes)
+    | name `notElem` map label arrays = []
+    | otherwise = () <$ (takeWhile (/= name) $ map label arrays)
+
+mkR :: String -> Markedness
+mkR array (Workspace features arrays morphemes)
+    | array `notElem` map label arrays = []
+    | otherwise = () <$ (dropWhile (/= array) $ map label arrays)
 
 -- EVAL
 eval :: Grammar -> Workspace -> Workspace
