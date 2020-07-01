@@ -1,10 +1,15 @@
 module HS_morpho
-    ( Feature(Binary)
+    ( Labeled(Labeled)
+    , Feature
+    , feature
     , Morpheme
-    , Stem(Stem)
-    , Exponent(Exponent)
+    , Stem
+    , stem
+    , Exponent
+    , exponent
     , Category(N,A,V,D)
-    , Array(Array)
+    , Array
+    , array
     , Workspace(Workspace)
     , mkWorkspace
     , GEN
@@ -22,6 +27,7 @@ module HS_morpho
 
 
 -- import Fst
+import Prelude hiding (exponent)
 import Data.List (inits,tails,delete,nub)
 import Control.Monad (guard)
 import Data.Function ((&))
@@ -44,34 +50,34 @@ Specificity: (Max)
 The Exponent is the most specic item that satisfies compatability
 -}
 
+data Labeled x = 
+    Labeled { label :: String
+            , content :: x} 
+    deriving (Eq,Show)
+
+type Feature = Labeled Bool
+feature :: String -> Bool -> Feature
+feature = Labeled
+
+type Exponent = Labeled [Feature]
+exponent :: String -> [Feature] -> Exponent
+exponent = Labeled
+
+type Array = Labeled [Exponent]
+array :: String -> [Exponent] -> Array
+array = Labeled
+
+type Stem = Labeled Category
+stem :: String -> Category -> Stem
+stem = Labeled
 
 -- most of the instances of Show are just for testing
-data Feature = 
-    Binary { featureName :: String
-           , featureValue :: Bool} 
-    deriving (Eq, Show)
--- add valued Features
-data Category = N | V | A | D deriving (Eq,Show)-- Categories could just be Strings?
 type Morpheme = Either Stem Exponent
+data Category = N | V | A | D deriving (Eq,Show)
 
-data Exponent = 
-    Exponent { exName :: String -- exname is a bad name
-             , exFeatures :: [Feature]} 
+data Workspace = 
+    Workspace [Feature] [Array] [Morpheme] 
     deriving (Eq,Show)
-
-data Array = 
-    Array { arrayName :: String
-          , arrayContents :: [Exponent]
-          } deriving (Eq,Show) -- maybe there should be typeclasses for getting names and contents
-
-data Stem = 
-    Stem { stName :: String 
-         , stCategory :: Category} 
-    deriving (Eq,Show) -- unsure if Category is needed. <- it is needed because it shoudl determine the set of features.
-
-data Workspace = Workspace [Feature] [Array] [Morpheme] 
-    deriving (Eq,Show)
-
 type Grammar = (GEN,Ranking)
 
 {-
@@ -82,7 +88,7 @@ mc only checks the number of arrays (this could be markedness, unless we change 
 
 -- General helper-functions
 mkWorkspace :: Either Stem Exponent -> [Feature] -> [Array] -> Workspace
-mkWorkspace stem@(Left (Stem string category)) features arrays = 
+mkWorkspace stem features arrays = 
     Workspace features arrays [stem]
 
 split :: [a] -> [([a], [a])]
@@ -90,7 +96,7 @@ split xs = zip (inits xs) (tails xs)
 
 getMorphemes :: Workspace -> String
 getMorphemes (Workspace _ _ xs) =
-    xs >>= either stName exName
+    xs >>= either label label -- there has to be a less redundant way.
 
 -- GEN:
 type GEN = Workspace -> [Workspace]
@@ -112,7 +118,7 @@ merge :: ([Array],[Morpheme]) -> [([Array],[Morpheme])]
 merge (arrays,morphemes) =
     do
         pick <- arrays
-        symbol <- arrayContents pick
+        symbol <- content pick
         let (newArrays,symbol') = (delete pick arrays, symbol)
         (morph,emes) <- split morphemes
         return (newArrays,morph ++ (Right symbol' : emes))
@@ -142,16 +148,16 @@ mc :: Markedness -- maybe this should be (anti-)Faithfulness instead?
 mc (Workspace _ arrays _) = () <$ arrays
 
 mkMc :: String -> Workspace -> [()]
-mkMc name (Workspace _ arrays _) = () <$ filter (== name) (map arrayName arrays) 
+mkMc name (Workspace _ arrays _) = () <$ filter (== name) (map label arrays) 
 
 idF :: Markedness
 idF (Workspace features1 _ morphemes) =
     do 
         feature1 <- features1
-        feature2 <- rights morphemes >>= exFeatures
+        feature2 <- rights morphemes >>= content
         let (f1,f2) = (feature1,feature2)
-        guard (featureName f1 == featureName f2)
-        guard (featureValue f1 /= featureValue f2)
+        guard (label f1 == label f2)
+        guard (content f1 /= content f2)
 
 mkMax :: String -> Markedness
 mkMax feature (Workspace features _ morphemes) =
@@ -159,9 +165,9 @@ mkMax feature (Workspace features _ morphemes) =
     & max feature features
   where
     max f fs ms 
-        | f `elem` map featureName fs 
+        | f `elem` map label fs 
           && f `notElem`
-          (map exFeatures ms >>= map featureName) = [()]
+          (map content ms >>= map label) = [()]
         | otherwise = []
 
 -- EVAL

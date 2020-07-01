@@ -1,29 +1,30 @@
+import Prelude hiding (exponent)
 import HS_morpho
 
 -- features
 -- dies 
 obl :: Bool -> Feature
-obl = Binary "obl"
+obl = feature "obl"
 gov :: Bool -> Feature
-gov = Binary "gov"
+gov = Labeled "gov"
 masc :: Bool -> Feature
-masc = Binary "masc"
+masc = Labeled "masc"
 fem :: Bool -> Feature
-fem = Binary "fem"
+fem = Labeled "fem"
 
 -- exponents
 -- dies
 k :: [Array]
-k = pure $ Array "k"
-    [ Exponent "m" [masc True, obl True, gov True]
-    , Exponent "s" [masc True, obl True]
-    , Exponent "s" [masc True, fem True]
-    , Exponent "n" [masc True, gov True]
-    , Exponent "r" [masc True]
-    , Exponent "r" [masc True]
-    , Exponent "n" [obl True, gov True]
-    , Exponent "r" [obl True]
-    , Exponent "e" []
+k = pure $ array "k"
+    [ exponent "m" [masc True, obl True, gov True]
+    , exponent "s" [masc True, obl True]
+    , exponent "s" [masc True, fem True]
+    , exponent "n" [masc True, gov True]
+    , exponent "r" [masc True]
+    , exponent "r" [masc True]
+    , exponent "n" [obl True, gov True]
+    , exponent "r" [obl True]
+    , exponent "e" []
     ]
 
 -- constraints
@@ -40,7 +41,7 @@ maxG = mkMax "gov"
 -- grammars
 -- dies
 testDies :: [Feature] -> String
-testDies features = getMorphemes $ converge dies (Workspace features k [Left $ Stem "dies" D])
+testDies features = getMorphemes $ converge dies (Workspace features k [Left $ stem "dies" D])
 
 dies :: (GEN, Ranking)
 dies = (diesGen,diesRanking) 
