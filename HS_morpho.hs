@@ -13,7 +13,6 @@ module HS_morpho
     , Constraint
     , Markedness
     , Faithfulness
-    , merge -- remove this
     , mc
     , idF
     , mkMax
@@ -141,6 +140,9 @@ type Faithfulness = Workspace -> Workspace -> [()]
 
 mc :: Markedness -- maybe this should be (anti-)Faithfulness instead?
 mc (Workspace _ arrays _) = () <$ arrays
+
+mkMc :: String -> Workspace -> [()]
+mkMc name (Workspace _ arrays _) = () <$ filter (== name) (map arrayName arrays) 
 
 idF :: Markedness
 idF (Workspace features1 _ morphemes) =
