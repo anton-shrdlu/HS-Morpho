@@ -11,6 +11,15 @@ masc :: Bool -> Feature
 masc = Labeled "masc"
 fem :: Bool -> Feature
 fem = Labeled "fem"
+pl :: Bool -> Feature
+pl = Labeled "pl"
+fstP :: Bool -> Feature
+fstP = Labeled "1st"
+sndP :: Bool -> Feature
+sndP = Labeled "sndP"
+trdP :: Bool -> Feature
+trdP = Labeled "trdP"
+
 
 -- exponents
 -- dies
@@ -57,3 +66,17 @@ dies = (diesGen,diesRanking)
         , maxF
         , maxG
         ]
+
+-- Wardaman
+exp :: [Array]
+exp = 
+    [ array "PERS"
+      [ exponent "nu" [sndP True,pl True]
+      , exponent "ŋa" [fstP True]
+      , exponent "wu" [trdP True,pl True] -- Müller put a backslash here, why?
+      , exponent "yi" [trdP False]
+      ]
+    , array "NUM"
+      [ exponent "rr" [pl True] 
+      ]
+    ]

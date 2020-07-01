@@ -138,7 +138,7 @@ move morphemes =
         return morphemes'
 
 -- Constraints:
-type Ranking = [Constraint]
+type Ranking = [Constraint] -- change to allow (reflexive) conjunctions
 type Constraint = Markedness -- so far all the features seem to be broadly markedness. If this doesn't change, delete features
 type Markedness = Workspace -> [()]
 type Faithfulness = Workspace -> Workspace -> [()]
