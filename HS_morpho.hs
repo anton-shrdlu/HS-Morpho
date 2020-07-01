@@ -4,7 +4,7 @@ module HS_morpho
     , Stem(Stem)
     , Exponent(Exponent)
     , Category(N,A,V,D)
-    , Array
+    , Array(Array)
     , Workspace(Workspace)
     , mkWorkspace
     , GEN
@@ -13,6 +13,7 @@ module HS_morpho
     , Constraint
     , Markedness
     , Faithfulness
+    , merge -- remove this
     , mc
     , idF
     , mkMax
@@ -45,28 +46,32 @@ The Exponent is the most specic item that satisfies compatability
 -}
 
 
+-- most of the instances of Show are just for testing
 data Feature = 
     Binary { featureName :: String
            , featureValue :: Bool} 
     deriving (Eq, Show)
 -- add valued Features
-data Category = N | V | A | D deriving Eq-- Categories could just be Strings?
+data Category = N | V | A | D deriving (Eq,Show)-- Categories could just be Strings?
 type Morpheme = Either Stem Exponent
 
 data Exponent = 
     Exponent { exName :: String -- exname is a bad name
              , exFeatures :: [Feature]} 
-    deriving Eq
+    deriving (Eq,Show)
 
-type Array = [Exponent] 
+data Array = 
+    Array { arrayName :: String
+          , arrayContents :: [Exponent]
+          } deriving (Eq,Show) -- maybe there should be typeclasses for getting names and contents
 
 data Stem = 
     Stem { stName :: String 
          , stCategory :: Category} 
-    deriving Eq -- unsure if Category is needed. <- it is needed because it shoudl determine the set of features.
+    deriving (Eq,Show) -- unsure if Category is needed. <- it is needed because it shoudl determine the set of features.
 
 data Workspace = Workspace [Feature] [Array] [Morpheme] 
-    deriving Eq
+    deriving (Eq,Show)
 
 type Grammar = (GEN,Ranking)
 
@@ -101,34 +106,32 @@ mkGen allowMerge allowMove workspace
 
 wrapMerge :: Workspace -> [Workspace]
 wrapMerge (Workspace features arrays morphemes) =
-    merge (map (map Right) arrays,morphemes)
-    & map (first (map rights))
+    merge (arrays,morphemes)
     & map (uncurry (Workspace features))
 
-merge :: Eq a => ([[a]], [a]) -> [([[a]], [a])]
-merge (arrays,workspace) = 
+merge :: ([Array],[Morpheme]) -> [([Array],[Morpheme])]
+merge (arrays,morphemes) =
     do
         pick <- arrays
-        let taggedArray = (delete pick arrays,pick)
-        symbol <- pick
-        let (array,symbol') = symbol <$ taggedArray
-        (work,space) <- split workspace
-        return (array, work ++ (symbol' : space)) 
+        symbol <- arrayContents pick
+        let (newArrays,symbol') = (delete pick arrays, symbol)
+        (morph,emes) <- split morphemes
+        return (newArrays,morph ++ (Right symbol' : emes))
 
 wrapMove :: Workspace -> [Workspace]
 wrapMove (Workspace features arrays morphemes) =
     map (Workspace features arrays) $ move morphemes
 
 move :: Eq a => [a] -> [[a]]
-move workspace =
+move morphemes =
     do
-        (work,space) <- split workspace 
-        guard (not $ null space)
-        let (workspace',movee) = (work ++ tail space,head space) 
-        ((work,space),movee) <- map (\x -> (x,movee)) $ split workspace'
-        let workspace' = work ++ (movee : space)
-        guard (workspace' /= workspace)
-        return workspace'
+        (morph,emes) <- split morphemes 
+        guard (not $ null emes)
+        let (morphemes',movee) = (morph ++ tail emes,head emes) 
+        ((morph,emes),movee) <- map (\x -> (x,movee)) $ split morphemes'
+        let morphemes' = morph ++ (movee : emes)
+        guard (morphemes' /= morphemes)
+        return morphemes'
 
 -- Constraints:
 type Ranking = [Constraint]
