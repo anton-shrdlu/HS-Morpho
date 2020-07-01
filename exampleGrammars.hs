@@ -14,7 +14,7 @@ fem = Binary "fem"
 -- exponents
 -- dies
 k :: [Array]
-k = pure
+k = pure $ Array "k"
     [ Exponent "m" [masc True, obl True, gov True]
     , Exponent "s" [masc True, obl True]
     , Exponent "s" [masc True, fem True]
