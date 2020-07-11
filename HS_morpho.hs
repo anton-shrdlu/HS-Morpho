@@ -143,6 +143,18 @@ type Constraint = Markedness -- so far all the features seem to be broadly marke
 type Markedness = Workspace -> [()]
 type Faithfulness = Workspace -> Workspace -> [()]
 
+-- reflexive conjunction is just counting in disguise. 
+-- to call it a conjunction seems weird.
+mkReflexive :: Constraint -> Int -> Constraint
+mkReflexive con n workspace 
+    | n <= length (con workspace) = [()]
+    | otherwise = []                  
+
+mkConjunction :: Constraint -> Constraint -> Constraint
+mkConjunction con1 con2 workspace 
+    | null (con1 workspace) || null (con2 workspace) = []
+    | otherwise = [()]
+
 mc :: Markedness -- maybe this should be (anti-)Faithfulness instead?
 mc (Workspace _ arrays _) = () <$ arrays
 
@@ -172,12 +184,20 @@ mkMax feature (Workspace features _ morphemes) =
 mkL :: String -> Markedness
 mkL name (Workspace features arrays morphemes)
     | name `notElem` map label arrays = []
-    | otherwise = () <$ (takeWhile (/= name) $ map label arrays)
+    | otherwise = () <$ takeWhile (/= name) (map label arrays)
 
 mkR :: String -> Markedness
 mkR array (Workspace features arrays morphemes)
     | array `notElem` map label arrays = []
-    | otherwise = () <$ (dropWhile (/= array) $ map label arrays)
+    | otherwise = () <$ dropWhile (/= array) (map label arrays)
+
+{- COHERENCE demands indexation of exponents
+In the book it looks like Müller indexes the set of features a stem carries.
+Which Morpheme is the stem that carries the features in Wardaman?
+Is this even the right way to think about this?
+Stems also need to be indexed, this could leed to another "labeled" situation...
+Maybe the structure building features need to be indexed as well?
+-}
 
 -- EVAL
 eval :: Grammar -> Workspace -> Workspace
